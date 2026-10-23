@@ -16,16 +16,17 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    - name: Install libnds Dependencies
+    - name: Install Build Essentials
       run: |
         sudo apt-get update && sudo apt-get install -y make
-        dkp-pacman -Syu --noconfirm
-        dkp-pacman -S --noconfirm nds-dev
 
     - name: Compile Game (Make)
       run: |
+        # Configura as variáveis globais que apontam para o compilador interno da imagem
         export DEVKITPRO=/opt/devkitpro
         export DEVKITARM=$DEVKITPRO/devkitARM
+        
+        # Executa a compilação baseada no seu Makefile
         make
 
     - name: Upload Nintendo DS ROM (.nds)
