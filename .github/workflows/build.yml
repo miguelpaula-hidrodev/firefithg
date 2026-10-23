@@ -1,83 +1,35 @@
-#---------------------------------------------------------------------------------
-.SUFFIXES:
-#---------------------------------------------------------------------------------
+name: "Build Nintendo DS Game"
 
-ifeq ($(strip $(DEVKITARM)),)
-$(error "Please set the DEVKITARM environment variable in your environment.")
-endif
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
 
-include $(DEVKITARM)/ds_rules
+jobs:
+  build-ds:
+    runs-on: ubuntu-latest
+    container:
+      image: devkitpro/devkitarm:latest
 
-#---------------------------------------------------------------------------------
-# TARGET é o nome do arquivo .nds final que será gerado
-#---------------------------------------------------------------------------------
-TARGET		:=	WW3DoomDS
-BUILD		:=	build
-SOURCES		:=	source
-INCLUDES	:=	include
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
 
-#---------------------------------------------------------------------------------
-# Opções do Compilador
-#---------------------------------------------------------------------------------
-ARCH	:=	-mthumb -mthumb-interwork
+    - name: Install libnds Dependencies
+      run: |
+        sudo apt-get update && sudo apt-get install -y make
+        dkp-pacman -Syu --noconfirm
+        dkp-pacman -S --noconfirm nds-dev
 
-CFLAGS	:=	-g -Wall -O2\
-			-march=armv5te -mtune=arm946e-s -fomit-frame-pointer\
-			-ffast-math \
-			$(ARCH)
+    - name: Compile Game (Make)
+      run: |
+        export DEVKITPRO=/opt/devkitpro
+        export DEVKITARM=$DEVKITPRO/devkitARM
+        make
 
-CFLAGS	+=	-DARM9
-CXXFLAGS:= $(CFLAGS) -fno-rtti -fno-exceptions
-
-ASFLAGS	:=	-g $(ARCH)
-LDFLAGS	=	-specs=ds_arm9.specs -g $(ARCH) -mno-fpu
-
-#---------------------------------------------------------------------------------
-# Bibliotecas do Nintendo DS (libnds é obrigatória)
-#---------------------------------------------------------------------------------
-LIBS	:=	-lnds9
-
-#---------------------------------------------------------------------------------
-# Regras de compilação automáticas
-#---------------------------------------------------------------------------------
-ifneq ($(BUILD),$(notdir $(CURDIR)))
-
-export OUTPUT	:=	$(CURDIR)/$(TARGET)
-export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir))
-export DEPSDIR	:=	$(CURDIR)/$(BUILD)
-
-CFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.c)))
-CPPFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.cpp)))
-
-export OFILES	:=	$(CFILES:.c=.o) $(CPPFILES:.cpp=.o)
-export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
-					$(foreach dir,$(SOURCES),-I$(CURDIR)/$(dir)) \
-					-I$(CURDIR)/$(BUILD) \
-					-I$(DEVKITPRO)/libnds/include
-
-.PHONY: $(BUILD) clean
-
-$(BUILD):
-	@[ -d $@ ] || mkdir -p $@
-	@make --no-print-directory -C $@ -f $(CURDIR)/Makefile
-
-clean:
-	@echo clean ...
-	@rm -fr $(BUILD) $(TARGET).elf $(TARGET).nds
-
-else
-
-$(OUTPUT).nds: $(OUTPUT).elf
-$(OUTPUT).elf: $(OFILES)
-
-%.o: %.cpp
-	@echo $(notdir $<)
-	$(CXX) -MMD -MP -MF $(DEPSDIR)/$*.d $(CXXFLAGS) $(INCLUDE) -c $< -o $@
-
-%.o: %.c
-	@echo $(notdir $<)
-	$(CC) -MMD -MP -MF $(DEPSDIR)/$*.d $(CFLAGS) $(INCLUDE) -c $< -o $@
-
--include $(OFILES:.o=.d)
-
-endif
+    - name: Upload Nintendo DS ROM (.nds)
+      uses: actions/upload-artifact@v4
+      with:
+        name: WW3DoomDS-ROM
+        path: "*.nds"
