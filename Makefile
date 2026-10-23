@@ -14,8 +14,8 @@ BUILD		:=	build
 SOURCES		:=	source
 INCLUDES	:=	include
 
-# Configurações do processador ARM do Nintendo DS (Adicionado as specs do ARM9 no topo)
-ARCH	:=	-mthumb -mthumb-interwork -specs=ds_arm9.specs
+# Configurações do processador ARM do Nintendo DS
+ARCH	:=	-mthumb -mthumb-interwork
 
 CFLAGS	:=	-g -Wall -O2\
 			-march=armv5te -mtune=arm946e-s -fomit-frame-pointer\
@@ -62,13 +62,14 @@ else
 $(OUTPUT).nds: $(OUTPUT).elf
 $(OUTPUT).elf: $(OFILES)
 
+# ATENÇÃO: Corrigido para injetar as especificações do Nintendo DS diretamente no compilador
 %.o: %.cpp
 	@echo $(notdir $<)
-	$(CXX) -MMD -MP -MF $(DEPSDIR)/$*.d $(CXXFLAGS) $(INCLUDE) -c $< -o $@
+	$(CXX) -specs=ds_arm9.specs -MMD -MP -MF $(DEPSDIR)/$*.d $(CXXFLAGS) $(INCLUDE) -c $< -o $@
 
 %.o: %.c
 	@echo $(notdir $<)
-	$(CC) -MMD -MP -MF $(DEPSDIR)/$*.d $(CFLAGS) $(INCLUDE) -c $< -o $@
+	$(CXX) -specs=ds_arm9.specs -MMD -MP -MF $(DEPSDIR)/$*.d $(CXXFLAGS) $(INCLUDE) -c $< -o $@
 
 -include $(OFILES:.o=.d)
 
