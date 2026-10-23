@@ -8,21 +8,21 @@ endif
 
 include $(DEVKITARM)/ds_rules
 
-# Nome do arquivo final do seu jogo (WW3DoomDS.nds)
+# Nome do arquivo final do seu jogo
 TARGET		:=	WW3DoomDS
 BUILD		:=	build
 SOURCES		:=	source
 INCLUDES	:=	include
 
-# Configurações do processador ARM do Nintendo DS
-ARCH	:=	-mthumb -mthumb-interwork
+# Configurações do processador ARM do Nintendo DS (Adicionado as specs do ARM9 no topo)
+ARCH	:=	-mthumb -mthumb-interwork -specs=ds_arm9.specs
 
 CFLAGS	:=	-g -Wall -O2\
 			-march=armv5te -mtune=arm946e-s -fomit-frame-pointer\
 			-ffast-math \
+			-DARM9 \
 			$(ARCH)
 
-CFLAGS	+=	-DARM9
 CXXFLAGS:= $(CFLAGS) -fno-rtti -fno-exceptions
 
 ASFLAGS	:=	-g $(ARCH)
